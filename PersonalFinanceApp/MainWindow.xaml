@@ -1,0 +1,17 @@
+﻿<Window x:Class="PersonalFinanceApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Приложение для управления финансами" Height="300" Width="400">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Введите имя пользователя:" Margin="0,0,0,5"/>
+            <TextBox x:Name="UsernameTextBox" Width="200" Margin="5"/>
+            <TextBlock Text="Введите пароль:" Margin="0,0,0,5"/>
+            <PasswordBox x:Name="PasswordBox" Width="200" Margin="5"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                <Button Content="Войти" Width="80" Margin="5" Click="LoginButton_Click"/>
+                <Button Content="Зарегистрироваться" Width="80" Margin="5" Click="RegisterButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
