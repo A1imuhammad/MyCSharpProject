@@ -125,6 +125,16 @@ namespace PersonalFinanceApp
             }
         }
 
+        // Метод для скрытия обоих графиков и очистки их данных
+        private void ResetCharts()
+        {
+            PieChart.Series.Clear();
+            PieChart.Visibility = Visibility.Collapsed;
+            CartesianChart.Series.Clear();
+            CartesianChart.Visibility = Visibility.Collapsed;
+            ReportTextBlock.Text = string.Empty;
+        }
+
         private void AddTransactionButton_Click(object sender, RoutedEventArgs e)
         {
             if (decimal.TryParse(TransactionAmountTextBox.Text, out decimal amount) &&
@@ -207,6 +217,8 @@ namespace PersonalFinanceApp
 
         private void ViewExpensesByCategoryButton_Click(object sender, RoutedEventArgs e)
         {
+            ResetCharts();
+
             var transactions = _dbContext.GetTransactions(_userId);
             var categories = _dbContext.GetCategories(_userId);
             var report = transactions
@@ -222,7 +234,7 @@ namespace PersonalFinanceApp
             // Текстовый отчет
             ReportTextBlock.Text = string.Join("\n", report.Select(r => $"{r.Category}: {r.Total} {GetDisplayCurrency(_dbContext.GetCurrency(_userId))}"));
 
-            // Построение круговой диаграммы
+            // Построение круговой диаграммы (используем PieChart)
             var series = new SeriesCollection();
             foreach (var item in report)
             {
@@ -235,11 +247,14 @@ namespace PersonalFinanceApp
                 });
             }
 
-            ExpensesPieChart.Series = series;
+            PieChart.Series = series;
+            PieChart.Visibility = Visibility.Visible;
         }
 
         private void ViewSummaryReportButton_Click(object sender, RoutedEventArgs e)
         {
+            ResetCharts();
+
             var transactions = _dbContext.GetTransactions(_userId);
 
             // Подсчитываем доходы и расходы
@@ -256,7 +271,7 @@ namespace PersonalFinanceApp
                                    $"Расходы: {totalExpenses} {currency}\n" +
                                    $"Баланс: {totalIncome - totalExpenses} {currency}";
 
-            // Построение круговой диаграммы
+            // Построение круговой диаграммы (используем PieChart)
             var series = new SeriesCollection();
             if (totalIncome > 0)
             {
@@ -279,7 +294,146 @@ namespace PersonalFinanceApp
                 });
             }
 
-            ExpensesPieChart.Series = series;
+            PieChart.Series = series;
+            PieChart.Visibility = Visibility.Visible;
+        }
+
+        // Метод для отображения динамики расходов (столбчатый график)
+        private void ViewExpenseDynamicsButton_Click(object sender, RoutedEventArgs e)
+        {
+            ResetCharts();
+
+            var transactions = _dbContext.GetTransactions(_userId);
+            var expensesByDate = transactions
+                .Where(t => t.Type == "Expense")
+                .GroupBy(t => t.Date.Date)
+                .Select(g => new { Date = g.Key, Total = g.Sum(x => x.Amount) })
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            if (!expensesByDate.Any())
+            {
+                ReportTextBlock.Text = "У вас пока нет расходов для отображения.";
+                return;
+            }
+
+            string currency = GetDisplayCurrency(_dbContext.GetCurrency(_userId));
+            ReportTextBlock.Text = $"Динамика расходов ({currency})";
+
+            CartesianChart.Series = new SeriesCollection
+            {
+                new ColumnSeries
+                {
+                    Title = "Расходы по дням",
+                    Values = new ChartValues<decimal>(expensesByDate.Select(x => x.Total))
+                }
+            };
+            CartesianChart.AxisX.Clear();
+            CartesianChart.AxisX.Add(new Axis
+            {
+                Title = "Дата",
+                Labels = expensesByDate.Select(x => x.Date.ToString("dd.MM")).ToArray()
+            });
+            CartesianChart.AxisY.Clear();
+            CartesianChart.AxisY.Add(new Axis
+            {
+                Title = $"Сумма ({currency})",
+                LabelFormatter = value => $"{value:F2}"
+            });
+
+            CartesianChart.Visibility = Visibility.Visible;
+        }
+
+        // Метод для анализа ежедневных трат (столбчатый график)
+        private void ViewDailyExpensesButton_Click(object sender, RoutedEventArgs e)
+        {
+            ResetCharts();
+
+            var transactions = _dbContext.GetTransactions(_userId);
+            var expensesByDay = transactions
+                .Where(t => t.Type == "Expense")
+                .GroupBy(t => t.Date.Date)
+                .Select(g => new { Date = g.Key, Total = g.Sum(x => x.Amount) })
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            if (!expensesByDay.Any())
+            {
+                ReportTextBlock.Text = "У вас пока нет расходов для отображения.";
+                return;
+            }
+
+            string currency = GetDisplayCurrency(_dbContext.GetCurrency(_userId));
+            ReportTextBlock.Text = $"Ежедневные траты ({currency})";
+
+            CartesianChart.Series = new SeriesCollection
+            {
+                new ColumnSeries
+                {
+                    Title = "Ежедневные траты",
+                    Values = new ChartValues<decimal>(expensesByDay.Select(x => x.Total))
+                }
+            };
+            CartesianChart.AxisX.Clear();
+            CartesianChart.AxisX.Add(new Axis
+            {
+                Title = "Дата",
+                Labels = expensesByDay.Select(x => x.Date.ToString("dd.MM")).ToArray()
+            });
+            CartesianChart.AxisY.Clear();
+            CartesianChart.AxisY.Add(new Axis
+            {
+                Title = $"Сумма ({currency})",
+                LabelFormatter = value => $"{value:F2}"
+            });
+
+            CartesianChart.Visibility = Visibility.Visible;
+        }
+
+        // Метод для графика накоплений (линейный график)
+        private void ViewSavingsGraphButton_Click(object sender, RoutedEventArgs e)
+        {
+            ResetCharts();
+
+            var transactions = _dbContext.GetTransactions(_userId).OrderBy(t => t.Date).ToList();
+            var balanceOverTime = new List<decimal> { 0 };
+            foreach (var t in transactions)
+            {
+                decimal lastBalance = balanceOverTime.Last();
+                balanceOverTime.Add(t.Type == "Income" ? lastBalance + t.Amount : lastBalance - t.Amount);
+            }
+
+            if (!transactions.Any())
+            {
+                ReportTextBlock.Text = "У вас пока нет транзакций для отображения.";
+                return;
+            }
+
+            string currency = GetDisplayCurrency(_dbContext.GetCurrency(_userId));
+            ReportTextBlock.Text = $"График накоплений ({currency})";
+
+            CartesianChart.Series = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "Накопления",
+                    Values = new ChartValues<decimal>(balanceOverTime)
+                }
+            };
+            CartesianChart.AxisX.Clear();
+            CartesianChart.AxisX.Add(new Axis
+            {
+                Title = "Дата",
+                Labels = transactions.Select(x => x.Date.ToString("dd.MM")).ToArray()
+            });
+            CartesianChart.AxisY.Clear();
+            CartesianChart.AxisY.Add(new Axis
+            {
+                Title = $"Баланс ({currency})",
+                LabelFormatter = value => $"{value:F2}"
+            });
+
+            CartesianChart.Visibility = Visibility.Visible;
         }
 
         private void SaveCurrencyButton_Click(object sender, RoutedEventArgs e)

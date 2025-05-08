@@ -316,8 +316,15 @@
                 <StackPanel Margin="10">
                     <Button Content="Посмотреть расходы по категориям" Width="200" Margin="0,0,0,10" Style="{StaticResource ModernButtonStyle}" Click="ViewExpensesByCategoryButton_Click"/>
                     <Button Content="Общий отчет (доходы и расходы)" Width="200" Margin="0,0,0,10" Style="{StaticResource ModernButtonStyle}" Click="ViewSummaryReportButton_Click"/>
+                    <Button Content="Динамика расходов" Width="200" Margin="0,0,0,10" Style="{StaticResource ModernButtonStyle}" Click="ViewExpenseDynamicsButton_Click"/>
+                    <Button Content="Ежедневные траты" Width="200" Margin="0,0,0,10" Style="{StaticResource ModernButtonStyle}" Click="ViewDailyExpensesButton_Click"/>
+                    <Button Content="График накоплений" Width="200" Margin="0,0,0,10" Style="{StaticResource ModernButtonStyle}" Click="ViewSavingsGraphButton_Click"/>
                     <TextBlock x:Name="ReportTextBlock" TextWrapping="Wrap" Margin="0,0,0,10" Style="{StaticResource ModernTextBlockStyle}"/>
-                    <lvc:PieChart x:Name="ExpensesPieChart" Height="300" Margin="0,0,0,10" LegendLocation="Right"/>
+                    <!-- Контейнер для графиков -->
+                    <Grid Margin="0,0,0,10">
+                        <lvc:PieChart x:Name="PieChart" Height="300" LegendLocation="Right" Visibility="Collapsed"/>
+                        <lvc:CartesianChart x:Name="CartesianChart" Height="300" LegendLocation="Right" Visibility="Collapsed"/>
+                    </Grid>
                 </StackPanel>
             </TabItem>
 
